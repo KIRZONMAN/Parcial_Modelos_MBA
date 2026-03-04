@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local backups
+Copia de Entregable_Parcial_MBA.ipynb
+
+# Optional: logs/temp
+*.log
+*.tmp
+*.bak.py
+*.bak.py
