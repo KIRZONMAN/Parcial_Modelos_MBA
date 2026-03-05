@@ -1,75 +1,64 @@
 """
-trafico/luces_trafico.py
-------------------------
-Controlador central de semáforos: verde / amarillo / rojo.
+trafico/luces_trafico.py: este es el controlador central de semáforos: verde / amarillo / rojo.
 
 Regla: solo una fase verde a la vez.
-Ciclo: verde NS → amarillo NS → (opcional) todo_rojo → verde EO → amarillo EO → todo_rojo → ...
+Ciclo: verde NS → amarillo NS → (opcional) todo_rojo → verde EO → amarillo EO → todo_rojo → etc...
 """
 
-from __future__ import annotations
+from __future__ import annotations  # compat tipos
 
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass  # ControladorSemaforos
+from typing import Literal  # EstadoLuz, FaseSemáforo
 
-EstadoLuz = Literal["verde", "amarillo", "rojo"]
-FaseSemáforo = Literal["norte_sur", "este_oeste"]
+EstadoLuz = Literal["verde", "amarillo", "rojo"]  # estados de la luz
+FaseSemáforo = Literal["norte_sur", "este_oeste"]  # fase actual (NS o EO)
 
 
-@dataclass
-class ControladorSemaforos:
-    """
-    Control central: NS vs EO; solo una fase en verde.
-    Amarillo = transición; todo_rojo = 1 tick de seguridad (opcional).
-    """
-    ticks_verde: int = 5
-    ticks_amarillo: int = 2
-    ticks_todo_rojo: int = 1
-    fase_actual: FaseSemáforo = "norte_sur"
-    # Estado dentro de la fase: "verde" | "amarillo" | "rojo" (todo_rojo)
-    estado_actual: EstadoLuz = "verde"
-    timer: int = 5
+@dataclass  # decorador
+class ControladorSemaforos:  # control central semáforos
+    ticks_verde: int = 5  # duración verde
+    ticks_amarillo: int = 2  # duración amarillo
+    ticks_todo_rojo: int = 1  # ticks todo rojo entre fases
+    fase_actual: FaseSemáforo = "norte_sur"  # norte_sur o este_oeste
+    estado_actual: EstadoLuz = "verde"  # verde/amarillo/rojo
+    timer: int = 5  # cuenta atrás dentro de la fase
 
     def __post_init__(self) -> None:
-        self.timer = self.ticks_verde
+        self.timer = self.ticks_verde  # arranca en verde
 
     def actualizar(self) -> None:
-        """Avanza un tick; solo una fase verde a la vez."""
-        self.timer -= 1
-        if self.timer > 0:
+        self.timer -= 1  # un tick menos
+        if self.timer > 0:  # sigue en la misma fase
             return
-
-        if self.estado_actual == "verde":
+        if self.estado_actual == "verde":  # pasar a amarillo
             self.estado_actual = "amarillo"
             self.timer = self.ticks_amarillo
-        elif self.estado_actual == "amarillo":
+        elif self.estado_actual == "amarillo":  # pasar a rojo
             self.estado_actual = "rojo"
             self.timer = self.ticks_todo_rojo
-        else:
-            # rojo (todo_rojo) -> cambio de fase
+        else:  # rojo -> cambiar fase y poner verde
             self.fase_actual = "este_oeste" if self.fase_actual == "norte_sur" else "norte_sur"
             self.estado_actual = "verde"
             self.timer = self.ticks_verde
 
     def luz_verde_norte_sur(self) -> bool:
-        return self.fase_actual == "norte_sur" and self.estado_actual == "verde"
+        return self.fase_actual == "norte_sur" and self.estado_actual == "verde"  # NS en verde
 
     def luz_verde_este_oeste(self) -> bool:
-        return self.fase_actual == "este_oeste" and self.estado_actual == "verde"
+        return self.fase_actual == "este_oeste" and self.estado_actual == "verde"  # EO en verde
 
     def luz_amarillo_norte_sur(self) -> bool:
-        return self.fase_actual == "norte_sur" and self.estado_actual == "amarillo"
+        return self.fase_actual == "norte_sur" and self.estado_actual == "amarillo"  # NS en amarillo
 
     def luz_amarillo_este_oeste(self) -> bool:
-        return self.fase_actual == "este_oeste" and self.estado_actual == "amarillo"
+        return self.fase_actual == "este_oeste" and self.estado_actual == "amarillo"  # EO en amarillo
 
     def puede_pasar(self, direccion: str) -> bool:
-        """Solo permite pasar con luz VERDE (no amarillo, no rojo)."""
-        if direccion in ("norte", "sur"):
+        if direccion in ("norte", "sur"):  # NS
             return self.luz_verde_norte_sur()
-        if direccion in ("este", "oeste"):
+        if direccion in ("este", "oeste"):  # EO
             return self.luz_verde_este_oeste()
-        return False
+        return False  # dirección rara
 
     def esta_amarillo_para(self, direccion: str) -> bool:
         if direccion in ("norte", "sur"):
@@ -79,5 +68,4 @@ class ControladorSemaforos:
         return False
 
     def esta_rojo_para(self, direccion: str) -> bool:
-        """Rojo cuando no es verde ni amarillo."""
-        return not self.puede_pasar(direccion) and not self.esta_amarillo_para(direccion)
+        return not self.puede_pasar(direccion) and not self.esta_amarillo_para(direccion)  # ni verde ni amarillo
